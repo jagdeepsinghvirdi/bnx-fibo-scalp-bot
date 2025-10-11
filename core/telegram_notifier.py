@@ -42,11 +42,6 @@ class TelegramNotifier:
     
     def notify_entry(self, trade_info: Dict):
         """Send entry notification"""
-        breakeven_status = ""
-        if trade_info.get('breakeven_order_placed', False):
-            half_size = trade_info['position_size'] / 2
-            breakeven_status = f"\n\n🎯 *Breakeven Order Active*\n50% ({half_size:.4f}) will close at entry price"
-        
         message = f"""
 🟢 *ENTRY SIGNAL*
 
@@ -54,7 +49,7 @@ Symbol: `{trade_info['symbol']}`
 Direction: *{trade_info['direction'].upper()}*
 Entry Price: `{trade_info['entry_price']:.6f}`
 Position Size: `{trade_info['position_size']:.4f}`
-Stop Loss: `{trade_info['stop_loss']:.6f}`{breakeven_status}
+Stop Loss: `{trade_info['stop_loss']:.6f}`
 
 Take Profits:
 • TP1: `{trade_info['take_profits']['tp1']:.6f}`

@@ -167,38 +167,9 @@ class RiskManager:
         self.place_stop_loss(symbol, side, position_size, stop_loss)
         
         take_profits = signal['take_profits']
-        
-        # NEW: If position > 0.1 contracts, place breakeven order for half
-        breakeven_order_placed = False
-        if position_size > 0.1:
-            half_position = position_size / 2
-            # Place limit order at entry price (breakeven) for half position
-            breakeven_order = self.place_limit_order(
-                symbol, 
-                'SELL' if side == 'BUY' else 'BUY',  # Opposite side to close
-                half_position, 
-                entry_price
-            )
-            if breakeven_order:
-                print(f"✅ Breakeven order placed: {half_position:.6f} contracts at ${entry_price:.2f}")
-                breakeven_order_placed = True
-            
-            # Adjust TP quantities to work with remaining half
-            if breakeven_order_placed:
-                # TPs apply to remaining half after breakeven
-                tp1_qty = half_position * (Settings.TP1_PERCENT / 100)
-                tp2_qty = half_position * (Settings.TP2_PERCENT / 100)
-                tp3_qty = half_position * (Settings.TP3_PERCENT / 100)
-            else:
-                # Use full position if breakeven order failed
-                tp1_qty = position_size * (Settings.TP1_PERCENT / 100)
-                tp2_qty = position_size * (Settings.TP2_PERCENT / 100)
-                tp3_qty = position_size * (Settings.TP3_PERCENT / 100)
-        else:
-            # Normal TP allocation for positions <= 0.1
-            tp1_qty = position_size * (Settings.TP1_PERCENT / 100)
-            tp2_qty = position_size * (Settings.TP2_PERCENT / 100)
-            tp3_qty = position_size * (Settings.TP3_PERCENT / 100)
+        tp1_qty = position_size * (Settings.TP1_PERCENT / 100)
+        tp2_qty = position_size * (Settings.TP2_PERCENT / 100)
+        tp3_qty = position_size * (Settings.TP3_PERCENT / 100)
         
         self.place_take_profit(symbol, side, tp1_qty, take_profits['tp1'])
         self.place_take_profit(symbol, side, tp2_qty, take_profits['tp2'])
@@ -213,7 +184,6 @@ class RiskManager:
             'entry_price': entry_price,
             'stop_loss': stop_loss,
             'position_size': position_size,
-            'breakeven_order_placed': breakeven_order_placed,
             'take_profits': take_profits,
             'entry_order': entry_order,
             'signal': signal
