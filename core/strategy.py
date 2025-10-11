@@ -10,24 +10,68 @@ class FiboScalpStrategy:
         
     def check_trend_filter(self, df_1h: pd.DataFrame, df_15m: pd.DataFrame) -> Optional[str]:
         """
-        Check 1H and 15m trend using EMA200
-        Returns: 'bullish', 'bearish', or None
+        Check if market is SIDEWAYS/RANGING (not trending)
+        Returns: 'bullish' for upward range, 'bearish' for downward range, None if strong trend
         """
         if df_1h.empty or df_15m.empty:
             return None
         
+        # Calculate price position relative to EMAs
         price_1h = df_1h['close'].iloc[-1]
         ema200_1h = df_1h['ema_200'].iloc[-1]
+        ema50_1h = df_1h['ema_50'].iloc[-1]
         
         price_15m = df_15m['close'].iloc[-1]
         ema200_15m = df_15m['ema_200'].iloc[-1]
+        ema50_15m = df_15m['ema_50'].iloc[-1]
         
-        if price_1h > ema200_1h and price_15m > ema200_15m:
-            return 'bullish'
-        elif price_1h < ema200_1h and price_15m < ema200_15m:
-            return 'bearish'
+        # Calculate distance from EMAs (percentage)
+        dist_1h_200 = abs(price_1h - ema200_1h) / ema200_1h * 100
+        dist_15m_200 = abs(price_15m - ema200_15m) / ema200_15m * 100
         
-        return None
+        # Check if EMAs are flat (sideways market indicator)
+        ema200_slope_1h = (ema200_1h - df_1h['ema_200'].iloc[-5]) / df_1h['ema_200'].iloc[-5] * 100
+        ema50_slope_1h = (ema50_1h - df_1h['ema_50'].iloc[-5]) / df_1h['ema_50'].iloc[-5] * 100
+        
+        # SIDEWAYS DETECTION:
+        # 1. Price close to EMAs (not far away)
+        # 2. EMAs are relatively flat (not steep)
+        # 3. Mixed signals between timeframes
+        
+        is_sideways = False
+        
+        # Method 1: Price near EMAs on both timeframes (ranging)
+        if dist_1h_200 < 1.5 and dist_15m_200 < 1.5:
+            is_sideways = True
+        
+        # Method 2: Flat EMAs indicate consolidation
+        if abs(ema200_slope_1h) < 0.5 and abs(ema50_slope_1h) < 1.0:
+            is_sideways = True
+        
+        # Method 3: Mixed signals (no clear trend agreement)
+        trend_1h = 'up' if price_1h > ema200_1h else 'down'
+        trend_15m = 'up' if price_15m > ema200_15m else 'down'
+        if trend_1h != trend_15m:
+            is_sideways = True
+        
+        if not is_sideways:
+            # Strong trend detected - skip trading
+            return None
+        
+        # In sideways market, determine range direction
+        # Use shorter-term price action
+        recent_high = df_15m['high'].tail(20).max()
+        recent_low = df_15m['low'].tail(20).min()
+        current_position = (price_15m - recent_low) / (recent_high - recent_low)
+        
+        # Trade both directions in ranging market
+        if current_position > 0.5:
+            return 'bullish'  # Upper half of range, look for shorts (or long bounces)
+        else:
+            return 'bearish'  # Lower half of range, look for longs
+        
+        # Default: allow trading in sideways
+        return 'bullish'
     
     def detect_fibo_setup(self, df: pd.DataFrame, trend: str) -> Optional[Dict]:
         """
@@ -199,7 +243,7 @@ class FiboScalpStrategy:
     
     def generate_signal(self, market_data: Dict[str, pd.DataFrame]) -> Optional[Dict]:
         """
-        Main signal generation logic
+        Main signal generation logic - SIDEWAYS/RANGING market focus
         Returns trade signal dict or None
         """
         df_1h = market_data.get('1h')
@@ -210,12 +254,13 @@ class FiboScalpStrategy:
         if any(df is None or df.empty for df in [df_1h, df_15m, df_5m, df_1m]):
             return None
         
-        trend = self.check_trend_filter(df_1h, df_15m)
-        if trend is None:
-            return None
+        # Check for sideways market (returns None if strong trend)
+        market_condition = self.check_trend_filter(df_1h, df_15m)
+        if market_condition is None:
+            return None  # Skip if strong trending market
         
-        setup_5m = self.detect_fibo_setup(df_5m, trend)
-        setup_1m = self.detect_fibo_setup(df_1m, trend)
+        setup_5m = self.detect_fibo_setup(df_5m, market_condition)
+        setup_1m = self.detect_fibo_setup(df_1m, market_condition)
         
         setup = setup_5m or setup_1m
         if setup is None:
