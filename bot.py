@@ -44,8 +44,12 @@ class FiboScalpBot:
     
     def run_loop(self):
         """Main trading loop"""
+        iteration = 0
         while self.running:
             try:
+                iteration += 1
+                self.logger.info(f"=== Iteration {iteration} - Checking market ===")
+                
                 market_data = self.data_fetcher.get_market_data(self.symbol, self.timeframes)
                 
                 if not market_data:
@@ -53,15 +57,24 @@ class FiboScalpBot:
                     time.sleep(60)
                     continue
                 
+                self.logger.info(f"Market data fetched: {len(market_data)} timeframes")
+                
+                # Log current price
+                df_1m = market_data.get('1m')
+                if df_1m is not None and not df_1m.empty:
+                    current_price = df_1m['close'].iloc[-1]
+                    self.logger.info(f"Current {self.symbol} price: ${current_price:,.2f}")
+                
                 signal = self.strategy.generate_signal(market_data)
                 
                 if signal:
-                    self.logger.info(f"Signal generated: {signal['direction']} on {signal['timeframe']}")
+                    self.logger.info(f"🎯 SIGNAL FOUND: {signal['direction']} on {signal['timeframe']}")
+                    self.logger.info(f"   Entry: ${signal['entry_price']:.2f}, Stop: ${signal['stop_loss']:.2f}")
                     
                     trade_info = self.risk_manager.execute_trade(signal, self.symbol)
                     
                     if trade_info:
-                        self.logger.info(f"Trade executed: {trade_info}")
+                        self.logger.info(f"✅ Trade executed: {trade_info}")
                         
                         self.logger.log_trade({
                             'timestamp': trade_info['timestamp'],
@@ -77,9 +90,14 @@ class FiboScalpBot:
                         })
                         
                         self.notifier.notify_entry(trade_info)
+                    else:
+                        self.logger.warning("❌ Trade execution failed (check balance/minimums)")
+                else:
+                    self.logger.info("No signal - waiting for setup...")
                 
                 self.monitor_positions(market_data)
                 
+                self.logger.info(f"Sleeping 60 seconds until next check...")
                 time.sleep(60)
                 
             except Exception as e:
