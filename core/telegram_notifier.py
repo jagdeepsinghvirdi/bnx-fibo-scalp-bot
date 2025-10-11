@@ -9,7 +9,11 @@ class TelegramNotifier:
         self.token = token or Settings.TELEGRAM_BOT_TOKEN
         self.chat_id = chat_id or Settings.TELEGRAM_CHAT_ID
         
-        if self.token and self.chat_id:
+        # Check if token/chat_id are actually configured (not placeholder values)
+        token_configured = self.token and self.token != 'your_telegram_bot_token'
+        chat_configured = self.chat_id and self.chat_id != 'your_chat_id'
+        
+        if token_configured and chat_configured:
             self.bot = Bot(token=self.token)
             self.enabled = True
         else:

@@ -1,7 +1,13 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Get the project root directory (parent of config folder)
+ROOT_DIR = Path(__file__).parent.parent
+ENV_FILE = ROOT_DIR / '.env'
+
+# Load .env file from project root
+load_dotenv(ENV_FILE, override=True)
 
 class Settings:
     # BingX API
