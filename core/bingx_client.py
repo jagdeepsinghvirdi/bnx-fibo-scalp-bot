@@ -1,14 +1,12 @@
 """
 BingX API Client
-Simple HTTP client for BingX API
+Using official bingX SDK for signature handling
 """
 
-import hmac
-import hashlib
+from bingX import API
 import time
 import requests
 from typing import List, Dict, Optional
-from urllib.parse import urlencode
 
 class BingXClient:
     """Simple BingX API client using HTTP requests"""
