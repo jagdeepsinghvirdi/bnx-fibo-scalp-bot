@@ -15,7 +15,7 @@ class BingXClient:
     
     def __init__(self, api_key: str, secret_key: str, demo: bool = False, trading_type: str = 'spot'):
         """
-        Initialize BingX client
+        Initialize BingX client using official SDK
         
         Args:
             api_key: BingX API key
@@ -23,70 +23,39 @@ class BingXClient:
             demo: Use demo/testnet mode
             trading_type: 'spot' or 'futures'
         """
-        self.api_key = api_key
-        self.secret_key = secret_key
-        self.demo = demo
         self.trading_type = trading_type.lower()
         
+        # Use official bingX SDK for signature handling
         if demo:
-            self.base_url = 'https://open-api-vst.bingx.com'
+            base_url = 'https://open-api-vst.bingx.com'
         else:
-            self.base_url = 'https://open-api.bingx.com'
+            base_url = 'https://open-api.bingx.com'
         
-        self.session = requests.Session()
-        self.session.headers.update({
-            'X-BX-APIKEY': self.api_key,
-            'Content-Type': 'application/json'
-        })
+        self.client = API(
+            api_key=api_key,
+            api_secret=secret_key,
+            base_url=base_url
+        )
     
-    def _generate_signature(self, params: Dict) -> str:
-        """Generate signature for authenticated requests"""
-        # Sort params and create query string
-        sorted_params = sorted(params.items())
-        query_string = '&'.join([f"{k}={v}" for k, v in sorted_params])
-        
-        print(f"DEBUG signature query_string: {query_string}")
-        
-        signature = hmac.new(
-            self.secret_key.encode('utf-8'),
-            query_string.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()
-        
-        print(f"DEBUG signature: {signature}")
-        return signature
-    
-    def _request(self, method: str, endpoint: str, params: Dict = None, signed: bool = False) -> Dict:
-        """Make HTTP request to BingX API"""
-        url = f"{self.base_url}{endpoint}"
-        
+    def _request(self, method: str, endpoint: str, params: Dict = None) -> Dict:
+        """Make HTTP request using official bingX SDK"""
         if params is None:
             params = {}
         
-        if signed:
-            # Add timestamp
-            params['timestamp'] = int(time.time() * 1000)
-            
-            # Generate signature BEFORE adding it to params
-            signature = self._generate_signature(params)
-            params['signature'] = signature
-        
         try:
             if method == 'GET':
-                response = self.session.get(url, params=params)
+                result = self.client.get(endpoint, params=params)
             elif method == 'POST':
-                # CRITICAL FIX: For POST requests, send params as query string, NOT JSON body
-                response = self.session.post(url, params=params)  # Changed from json=params
+                result = self.client.post(endpoint, params=params)
             elif method == 'DELETE':
-                response = self.session.delete(url, params=params)
+                result = self.client.delete(endpoint, params=params)
             else:
                 raise ValueError(f"Unsupported method: {method}")
             
-            result = response.json()
             print(f"DEBUG API response: {result}")
             return result
             
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             print(f"API request error: {e}")
             return {}
     
@@ -153,7 +122,7 @@ class BingXClient:
             else:
                 endpoint = '/openApi/swap/v2/user/balance'
             
-            response = self._request('GET', endpoint, signed=True)
+            response = self._request('GET', endpoint)
             if response and 'data' in response:
                 return response['data']
             return {}
@@ -203,7 +172,7 @@ class BingXClient:
             else:
                 endpoint = '/openApi/swap/v2/trade/order'
             
-            response = self._request('POST', endpoint, params, signed=True)
+            response = self._request('POST', endpoint, params)
             
             if response and 'data' in response:
                 return response['data']
