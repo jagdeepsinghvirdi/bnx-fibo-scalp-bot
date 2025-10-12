@@ -45,15 +45,35 @@ class RiskManager:
         """Get account balance"""
         try:
             account = self.client.get_balance()
+            print(f"DEBUG get_balance: {account}")
+            
             if isinstance(account, dict):
-                balance = account.get('balance', {})
-                if isinstance(balance, dict):
-                    return float(balance.get('balance', 0))
-                elif isinstance(balance, list) and len(balance) > 0:
-                    return float(balance[0].get('balance', 0))
+                # Try 'balances' (with s) first - BingX spot API format
+                balance = account.get('balances', account.get('balance', account.get('data', {})))
+                
+                if isinstance(balance, list) and len(balance) > 0:
+                    # Find USDT in list
+                    for item in balance:
+                        if item.get('asset') == 'USDT' or item.get('coin') == 'USDT':
+                            bal = float(item.get('free', item.get('balance', item.get('available', 0))))
+                            print(f"DEBUG: Parsed balance (list/USDT): {bal}")
+                            return bal
+                    # Return first item if no USDT found
+                    bal = float(balance[0].get('free', balance[0].get('balance', balance[0].get('available', 0))))
+                    print(f"DEBUG: Parsed balance (list/first): {bal}")
+                    return bal
+                elif isinstance(balance, dict):
+                    # Direct balance field
+                    bal = float(balance.get('free', balance.get('balance', balance.get('available', 0))))
+                    print(f"DEBUG: Parsed balance (dict): {bal}")
+                    return bal
+                    
+            print(f"DEBUG: Could not parse balance, returning 0")
             return 0.0
         except Exception as e:
             print(f"Error getting balance: {e}")
+            import traceback
+            traceback.print_exc()
             return 0.0
     
     def calculate_position_size(self, entry_price: float, stop_loss: float, balance: float = None) -> float:
@@ -100,12 +120,15 @@ class RiskManager:
             order = self.client.create_order(
                 symbol=symbol,
                 side=side.upper(),
-                type='MARKET',
+                order_type='MARKET',  # Changed from type= to order_type=
                 quantity=quantity
             )
+            print(f"DEBUG: Order placed successfully: {order}")
             return order
         except Exception as e:
             print(f"Error placing market order: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def place_limit_order(self, symbol: str, side: str, quantity: float, price: float) -> Optional[Dict]:
@@ -114,7 +137,7 @@ class RiskManager:
             order = self.client.create_order(
                 symbol=symbol,
                 side=side.upper(),
-                type='LIMIT',
+                order_type='LIMIT',  # Fixed parameter name
                 quantity=quantity,
                 price=price,
                 timeInForce='GTC'
@@ -131,13 +154,15 @@ class RiskManager:
             order = self.client.create_order(
                 symbol=symbol,
                 side=stop_side,
-                type='STOP_MARKET',
+                order_type='STOP_MARKET',  # Fixed parameter name
                 quantity=quantity,
                 stopPrice=stop_price
             )
             return order
         except Exception as e:
             print(f"Error placing stop-loss: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def place_take_profit(self, symbol: str, side: str, quantity: float, tp_price: float) -> Optional[Dict]:
@@ -147,13 +172,15 @@ class RiskManager:
             order = self.client.create_order(
                 symbol=symbol,
                 side=tp_side,
-                type='TAKE_PROFIT_MARKET',
+                order_type='TAKE_PROFIT_MARKET',  # Fixed parameter name
                 quantity=quantity,
                 stopPrice=tp_price
             )
             return order
         except Exception as e:
             print(f"Error placing take-profit: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def execute_trade(self, signal: Dict, symbol: str) -> Optional[Dict]:
