@@ -64,7 +64,10 @@ class RiskManager:
         if balance is None:
             balance = self.get_account_balance()
         
+        print(f"DEBUG: Balance={balance}, Entry={entry_price}, Stop={stop_loss}")
+        
         if balance == 0:
+            print("DEBUG: Balance is 0, returning 0")
             return 0.0
         
         # Calculate risk-based position size
@@ -72,19 +75,23 @@ class RiskManager:
         
         price_risk = abs(entry_price - stop_loss)
         if price_risk == 0:
+            print("DEBUG: Price risk is 0, returning 0")
             return 0.0
         
         position_size = risk_amount / price_risk
+        print(f"DEBUG: Risk-based position_size={position_size} ({position_size * entry_price:.2f} USD)")
         
         # ULTRA-AGGRESSIVE: Enforce minimum $1 position
         min_position_value = 1.0  # $1 minimum
         min_position_size = min_position_value / entry_price
+        print(f"DEBUG: Minimum position_size={min_position_size} ({min_position_value} USD)")
         
         # Use the larger of: risk-based size OR minimum $1 size
         if position_size < min_position_size:
             print(f"Position too small ({position_size * entry_price:.2f} USD), using minimum ${min_position_value}")
             position_size = min_position_size
         
+        print(f"DEBUG: Final position_size={position_size} ({position_size * entry_price:.2f} USD)")
         return position_size
     
     def place_market_order(self, symbol: str, side: str, quantity: float) -> Optional[Dict]:
@@ -163,8 +170,13 @@ class RiskManager:
         
         position_size = self.calculate_position_size(entry_price, stop_loss, balance)
         
-        if position_size == 0:
-            print("Position size is 0")
+        # ULTRA-AGGRESSIVE: Removed zero check, minimum $1 enforced in calculate_position_size
+        # if position_size == 0:
+        #     print("Position size is 0")
+        #     return None
+        
+        if position_size <= 0:
+            print(f"ERROR: Position size is {position_size}, should never be zero with $1 minimum!")
             return None
         
         side = 'BUY' if direction == 'up' else 'SELL'
