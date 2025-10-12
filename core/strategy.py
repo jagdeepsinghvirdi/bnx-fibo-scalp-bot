@@ -75,7 +75,7 @@ class FiboScalpStrategy:
     
     def detect_fibo_setup(self, df: pd.DataFrame, trend: str) -> Optional[Dict]:
         """
-        Detect Fibo retracement setup on lower timeframes
+        Detect Fibo retracement setup on lower timeframes (ULTRA-AGGRESSIVE: No zone check)
         Returns setup dict with Fibo levels and entry conditions
         """
         is_impulse, impulse_dir = self.data_fetcher.detect_impulse(df)
@@ -100,10 +100,10 @@ class FiboScalpStrategy:
         
         current_price = df['close'].iloc[-1]
         
-        in_entry_zone = self._is_in_entry_zone(current_price, fibo_levels, direction)
-        
-        if not in_entry_zone:
-            return None
+        # ULTRA-AGGRESSIVE: Skip entry zone check, accept ANY price after impulse
+        # in_entry_zone = self._is_in_entry_zone(current_price, fibo_levels, direction)
+        # if not in_entry_zone:
+        #     return None
         
         return {
             'direction': direction,
