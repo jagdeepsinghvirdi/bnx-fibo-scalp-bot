@@ -101,12 +101,17 @@ class RiskManager:
         position_size = risk_amount / price_risk
         print(f"DEBUG: Risk-based position_size={position_size} ({position_size * entry_price:.2f} USD)")
         
+        # CRITICAL: Cap at 90% of balance to avoid "Insufficient assets" error
+        max_position_by_balance = (balance * 0.90) / entry_price
+        print(f"DEBUG: Max position by balance (90%)={max_position_by_balance} ({max_position_by_balance * entry_price:.2f} USD)")
+        
         # ULTRA-AGGRESSIVE: Enforce minimum $1 position
         min_position_value = 1.0  # $1 minimum
         min_position_size = min_position_value / entry_price
         print(f"DEBUG: Minimum position_size={min_position_size} ({min_position_value} USD)")
         
-        # Use the larger of: risk-based size OR minimum $1 size
+        # Use risk-based size, capped at balance, minimum $1
+        position_size = min(position_size, max_position_by_balance)
         if position_size < min_position_size:
             print(f"Position too small ({position_size * entry_price:.2f} USD), using minimum ${min_position_value}")
             position_size = min_position_size
