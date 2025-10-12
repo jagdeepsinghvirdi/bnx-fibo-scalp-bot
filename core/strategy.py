@@ -83,10 +83,12 @@ class FiboScalpStrategy:
         if not is_impulse:
             return None
         
-        if trend == 'bullish' and impulse_dir != 'up':
-            return None
-        if trend == 'bearish' and impulse_dir != 'down':
-            return None
+        # ULTRA-AGGRESSIVE: In sideways markets, trade BOTH directions!
+        # Don't enforce direction matching
+        # if trend == 'bullish' and impulse_dir != 'up':
+        #     return None
+        # if trend == 'bearish' and impulse_dir != 'down':
+        #     return None
         
         swing_high, swing_low, _, _ = self.data_fetcher.get_swing_high_low(
             df, self.settings.SWING_LOOKBACK
