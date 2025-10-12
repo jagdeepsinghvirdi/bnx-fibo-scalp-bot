@@ -141,9 +141,9 @@ class DataFetcher:
         
         return market_data
     
-    def detect_impulse(self, df: pd.DataFrame, min_candles: int = 3, min_pct: float = 0.5) -> Tuple[bool, str]:
+    def detect_impulse(self, df: pd.DataFrame, min_candles: int = 3, min_pct: float = 0.25) -> Tuple[bool, str]:
         """
-        Detect fast impulse move
+        Detect fast impulse move (RELAXED: 0.25% instead of 0.5%)
         Returns: (is_impulse, direction)
         """
         if len(df) < min_candles:

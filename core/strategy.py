@@ -115,18 +115,18 @@ class FiboScalpStrategy:
         }
     
     def _is_in_entry_zone(self, price: float, fibo_levels: Dict, direction: str) -> bool:
-        """Check if price is in Fibonacci entry zone (0.382-0.618)"""
-        fibo_382 = fibo_levels['0.382']
-        fibo_618 = fibo_levels['0.618']
+        """Check if price is in Fibonacci entry zone (WIDER: 0.236-0.786)"""
+        fibo_236 = fibo_levels.get('0.236', fibo_levels['0.382'])
+        fibo_786 = fibo_levels.get('0.786', fibo_levels['0.618'])
         
         if direction == 'up':
-            return fibo_618 <= price <= fibo_382
+            return fibo_786 <= price <= fibo_236
         else:
-            return fibo_382 <= price <= fibo_618
+            return fibo_236 <= price <= fibo_786
     
     def confirm_entry(self, df: pd.DataFrame, setup: Dict) -> Tuple[bool, str]:
         """
-        Confirm entry with RSI reversal or candle pattern
+        Confirm entry with RSI reversal or candle pattern (RELAXED)
         Returns: (should_enter, reason)
         """
         if len(df) < 3:
@@ -139,15 +139,22 @@ class FiboScalpStrategy:
             return False, "RSI not available"
         
         if direction == 'up':
+            # Relaxed: RSI < 40 instead of < 30
             if current_rsi < self.settings.RSI_OVERSOLD:
                 rsi_reversal = current_rsi > df['rsi'].iloc[-2]
                 if rsi_reversal:
                     return True, "RSI reversal from oversold"
             
+            # Accept any bullish candle in entry zone
             if self._is_bullish_candle(df):
                 return True, "Bullish candle pattern"
+            
+            # NEW: Accept if just in entry zone with positive momentum
+            if current_rsi > 45:  # Not too oversold
+                return True, "In entry zone with neutral RSI"
         
         else:  # bearish
+            # Relaxed: RSI > 60 instead of > 70
             if current_rsi > self.settings.RSI_OVERBOUGHT:
                 rsi_reversal = current_rsi < df['rsi'].iloc[-2]
                 if rsi_reversal:
@@ -155,38 +162,58 @@ class FiboScalpStrategy:
             
             if self._is_bearish_candle(df):
                 return True, "Bearish candle pattern"
+            
+            # NEW: Accept if just in entry zone with negative momentum
+            if current_rsi < 55:  # Not too overbought
+                return True, "In entry zone with neutral RSI"
         
         return False, "No confirmation"
     
     def _is_bullish_candle(self, df: pd.DataFrame) -> bool:
-        """Check for bullish candle pattern"""
+        """Check for bullish candle pattern (RELAXED)"""
         last = df.iloc[-1]
         prev = df.iloc[-2]
         
         body = last['close'] - last['open']
         prev_body = prev['close'] - prev['open']
         
+        # Relaxed: Accept any bullish candle after bearish
         if body > 0 and prev_body < 0:
             return True
         
-        if body > 0 and body > abs(prev_body) * 1.5:
+        # Relaxed: Only need 1.2x instead of 1.5x
+        if body > 0 and body > abs(prev_body) * 1.2:
             return True
+        
+        # NEW: Accept any green candle with decent body
+        if body > 0:
+            candle_range = last['high'] - last['low']
+            if candle_range > 0 and body / candle_range > 0.5:  # Body is 50%+ of range
+                return True
         
         return False
     
     def _is_bearish_candle(self, df: pd.DataFrame) -> bool:
-        """Check for bearish candle pattern"""
+        """Check for bearish candle pattern (RELAXED)"""
         last = df.iloc[-1]
         prev = df.iloc[-2]
         
         body = last['close'] - last['open']
         prev_body = prev['close'] - prev['open']
         
+        # Relaxed: Accept any bearish candle after bullish
         if body < 0 and prev_body > 0:
             return True
         
-        if body < 0 and abs(body) > prev_body * 1.5:
+        # Relaxed: Only need 1.2x instead of 1.5x
+        if body < 0 and abs(body) > abs(prev_body) * 1.2:
             return True
+        
+        # NEW: Accept any red candle with decent body
+        if body < 0:
+            candle_range = last['high'] - last['low']
+            if candle_range > 0 and abs(body) / candle_range > 0.5:  # Body is 50%+ of range
+                return True
         
         return False
     

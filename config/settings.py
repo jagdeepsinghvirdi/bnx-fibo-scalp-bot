@@ -34,18 +34,18 @@ class Settings:
     # Timeframes
     TIMEFRAMES = os.getenv('TIMEFRAMES', '1m,3m,5m,15m,1h').split(',')
     
-    # Strategy
+    # Strategy (RELAXED SETTINGS for more signals)
     EMA_FAST = int(os.getenv('EMA_FAST', 50))
     EMA_SLOW = int(os.getenv('EMA_SLOW', 200))
     RSI_PERIOD = int(os.getenv('RSI_PERIOD', 14))
-    RSI_OVERSOLD = int(os.getenv('RSI_OVERSOLD', 30))
-    RSI_OVERBOUGHT = int(os.getenv('RSI_OVERBOUGHT', 70))
+    RSI_OVERSOLD = int(os.getenv('RSI_OVERSOLD', 40))  # Relaxed: 40 instead of 30
+    RSI_OVERBOUGHT = int(os.getenv('RSI_OVERBOUGHT', 60))  # Relaxed: 60 instead of 70
     SWING_LOOKBACK = int(os.getenv('SWING_LOOKBACK', 20))
     
-    # Fibonacci
-    FIBO_ENTRY_MIN = float(os.getenv('FIBO_ENTRY_MIN', 0.382))
-    FIBO_ENTRY_MAX = float(os.getenv('FIBO_ENTRY_MAX', 0.618))
-    FIBO_STOP_LEVEL = float(os.getenv('FIBO_STOP_LEVEL', 0.786))
+    # Fibonacci (WIDER ENTRY ZONE for more signals)
+    FIBO_ENTRY_MIN = float(os.getenv('FIBO_ENTRY_MIN', 0.236))  # Wider: 0.236 instead of 0.382
+    FIBO_ENTRY_MAX = float(os.getenv('FIBO_ENTRY_MAX', 0.786))  # Wider: 0.786 instead of 0.618
+    FIBO_STOP_LEVEL = float(os.getenv('FIBO_STOP_LEVEL', 1.0))  # Further: 1.0 instead of 0.786
     
     # Take Profit
     TP1_FIBO = float(os.getenv('TP1_FIBO', 0.236))
