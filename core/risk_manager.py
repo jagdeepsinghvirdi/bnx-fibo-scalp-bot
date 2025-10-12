@@ -59,8 +59,7 @@ class RiskManager:
     def calculate_position_size(self, entry_price: float, stop_loss: float, balance: float = None) -> float:
         """
         Calculate position size based on risk percentage
-        Risk = balance * risk_pct / 100
-        Position size = Risk / (entry_price - stop_loss)
+        ULTRA-AGGRESSIVE: Minimum $1 position size
         """
         if balance is None:
             balance = self.get_account_balance()
@@ -68,6 +67,7 @@ class RiskManager:
         if balance == 0:
             return 0.0
         
+        # Calculate risk-based position size
         risk_amount = balance * (Settings.RISK_PERCENT / 100)
         
         price_risk = abs(entry_price - stop_loss)
@@ -75,6 +75,15 @@ class RiskManager:
             return 0.0
         
         position_size = risk_amount / price_risk
+        
+        # ULTRA-AGGRESSIVE: Enforce minimum $1 position
+        min_position_value = 1.0  # $1 minimum
+        min_position_size = min_position_value / entry_price
+        
+        # Use the larger of: risk-based size OR minimum $1 size
+        if position_size < min_position_size:
+            print(f"Position too small ({position_size * entry_price:.2f} USD), using minimum ${min_position_value}")
+            position_size = min_position_size
         
         return position_size
     

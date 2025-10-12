@@ -221,27 +221,31 @@ class FiboScalpStrategy:
     
     def check_entry_trigger(self, df: pd.DataFrame, setup: Dict) -> bool:
         """
-        Check for entry trigger (breakout above/below short-term high/low)
+        Check for entry trigger (ULTRA-AGGRESSIVE: Always trigger immediately)
         """
-        if len(df) < 5:
-            return False
+        # ULTRA-AGGRESSIVE: Enter immediately, don't wait for breakout
+        return True
         
-        direction = setup['direction']
-        current_price = df['close'].iloc[-1]
-        
-        recent_highs = df['high'].tail(5).iloc[:-1]
-        recent_lows = df['low'].tail(5).iloc[:-1]
-        
-        if direction == 'up':
-            short_term_high = recent_highs.max()
-            if current_price > short_term_high:
-                return True
-        else:
-            short_term_low = recent_lows.min()
-            if current_price < short_term_low:
-                return True
-        
-        return False
+        # OLD CODE (commented out - was requiring breakout confirmation):
+        # if len(df) < 5:
+        #     return False
+        # 
+        # direction = setup['direction']
+        # current_price = df['close'].iloc[-1]
+        # 
+        # recent_highs = df['high'].tail(5).iloc[:-1]
+        # recent_lows = df['low'].tail(5).iloc[:-1]
+        # 
+        # if direction == 'up':
+        #     short_term_high = recent_highs.max()
+        #     if current_price > short_term_high:
+        #         return True
+        # else:
+        #     short_term_low = recent_lows.min()
+        #     if current_price < short_term_low:
+        #         return True
+        # 
+        # return False
     
     def calculate_stop_loss(self, setup: Dict) -> float:
         """Calculate stop-loss level just beyond 0.786 Fibo"""
