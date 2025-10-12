@@ -41,12 +41,19 @@ class BingXClient:
     
     def _generate_signature(self, params: Dict) -> str:
         """Generate signature for authenticated requests"""
-        query_string = urlencode(params)
+        # Sort params and create query string
+        sorted_params = sorted(params.items())
+        query_string = '&'.join([f"{k}={v}" for k, v in sorted_params])
+        
+        print(f"DEBUG signature query_string: {query_string}")
+        
         signature = hmac.new(
             self.secret_key.encode('utf-8'),
             query_string.encode('utf-8'),
             hashlib.sha256
         ).hexdigest()
+        
+        print(f"DEBUG signature: {signature}")
         return signature
     
     def _request(self, method: str, endpoint: str, params: Dict = None, signed: bool = False) -> Dict:
@@ -57,21 +64,27 @@ class BingXClient:
             params = {}
         
         if signed:
+            # Add timestamp
             params['timestamp'] = int(time.time() * 1000)
-            params['signature'] = self._generate_signature(params)
+            
+            # Generate signature BEFORE adding it to params
+            signature = self._generate_signature(params)
+            params['signature'] = signature
         
         try:
             if method == 'GET':
                 response = self.session.get(url, params=params)
             elif method == 'POST':
-                response = self.session.post(url, json=params)
+                # CRITICAL FIX: For POST requests, send params as query string, NOT JSON body
+                response = self.session.post(url, params=params)  # Changed from json=params
             elif method == 'DELETE':
                 response = self.session.delete(url, params=params)
             else:
                 raise ValueError(f"Unsupported method: {method}")
             
-            response.raise_for_status()
-            return response.json()
+            result = response.json()
+            print(f"DEBUG API response: {result}")
+            return result
             
         except requests.exceptions.RequestException as e:
             print(f"API request error: {e}")
@@ -164,8 +177,16 @@ class BingXClient:
             Order response
         """
         try:
+            # CRITICAL: Spot NEEDS hyphen (BTC-USDT), Futures needs NO hyphen (BTCUSDT)
+            if self.trading_type == 'spot':
+                # Ensure hyphen for spot
+                formatted_symbol = symbol if '-' in symbol else f"{symbol[:3]}-{symbol[3:]}"
+            else:
+                # Remove hyphen for futures
+                formatted_symbol = symbol.replace('-', '')
+            
             params = {
-                'symbol': symbol.replace('-', ''),
+                'symbol': formatted_symbol,
                 'side': side,
                 'type': order_type,
                 'quantity': quantity
