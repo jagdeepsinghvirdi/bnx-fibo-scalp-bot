@@ -28,7 +28,7 @@ class Settings:
     TRADING_TYPE = os.getenv('TRADING_TYPE', 'spot')  # 'spot' or 'futures'
     SYMBOL = os.getenv('SYMBOL', 'BTC-USDT')
     RISK_PERCENT = float(os.getenv('RISK_PERCENT', 10))
-    MAX_DAILY_TRADES = int(os.getenv('MAX_DAILY_TRADES', 10))
+    MAX_DAILY_TRADES = int(os.getenv('MAX_DAILY_TRADES', 99))  # Increased to 99 trades per day
     MAX_DAILY_LOSS_PERCENT = float(os.getenv('MAX_DAILY_LOSS_PERCENT', 5))
     
     # Timeframes
