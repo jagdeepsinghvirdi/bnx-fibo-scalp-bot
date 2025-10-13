@@ -43,7 +43,7 @@ class TelegramNotifier:
     def notify_entry(self, trade_info: Dict, balance: float = None, balance_info: Dict = None):
         """Send entry notification"""
         if balance_info:
-            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+            balance_text = f"\n💰 Total Assets: `${balance_info['total']:.2f}` | Available: `${balance_info['available']:.2f}`"
         elif balance is not None:
             balance_text = f"\n💰 Balance: `${balance:.2f}` USDT"
         else:
@@ -72,7 +72,7 @@ Timeframe: {trade_info['signal']['timeframe']}{balance_text}
         """Send exit notification"""
         emoji = "🟢" if pnl > 0 else "🔴"
         if balance_info:
-            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+            balance_text = f"\n💰 Total Assets: `${balance_info['total']:.2f}` | Available: `${balance_info['available']:.2f}`"
         elif balance is not None:
             balance_text = f"\n💰 Balance: `${balance:.2f}` USDT"
         else:
@@ -90,7 +90,7 @@ PnL: `{pnl:.2f}` USDT{balance_text}
     def notify_stop_loss(self, symbol: str, price: float, pnl: float, balance: float = None, balance_info: Dict = None):
         """Send stop loss notification"""
         if balance_info:
-            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+            balance_text = f"\n💰 Total Assets: `${balance_info['total']:.2f}` | Available: `${balance_info['available']:.2f}`"
         elif balance is not None:
             balance_text = f"\n💰 Balance: `${balance:.2f}` USDT"
         else:
@@ -118,7 +118,7 @@ Loss: `{pnl:.2f}` USDT{balance_text}
         """Send daily summary"""
         emoji = "📈" if pnl > 0 else "📉"
         if balance_info:
-            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+            balance_text = f"\n💰 Total Assets: `${balance_info['total']:.2f}` | Available: `${balance_info['available']:.2f}`"
         elif balance is not None:
             balance_text = f"\n💰 Balance: `${balance:.2f}` USDT"
         else:

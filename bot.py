@@ -41,7 +41,7 @@ class FiboScalpBot:
         # Get initial balance
         balance_info = self.risk_manager.get_account_balance_full()
         if balance_info['total'] > 0:
-            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+            balance_text = f"\n💰 Total Assets: `${balance_info['total']:.2f}` | Available: `${balance_info['available']:.2f}`"
         else:
             balance_text = ""
         

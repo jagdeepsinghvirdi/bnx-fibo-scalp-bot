@@ -48,7 +48,7 @@ class RiskManager:
     
     def get_account_balance_full(self) -> dict:
         """
-        Get full account balance info
+        Get full account balance info - calculates total assets value in USDT
         
         Returns:
             dict: {'available': float, 'locked': float, 'total': float}
@@ -57,29 +57,61 @@ class RiskManager:
             account = self.client.get_balance()
             print(f"DEBUG get_balance: {account}")
             
+            total_available_usdt = 0.0
+            total_locked_usdt = 0.0
+            
             if isinstance(account, dict):
                 # Try 'balances' (with s) first - BingX spot API format
                 balance = account.get('balances', account.get('balance', account.get('data', {})))
                 
                 if isinstance(balance, list) and len(balance) > 0:
-                    # Find USDT in list
+                    # Calculate total assets value in USDT
                     for item in balance:
-                        if item.get('asset') == 'USDT' or item.get('coin') == 'USDT':
-                            free = float(item.get('free', 0))
-                            locked = float(item.get('locked', 0))
-                            total = free + locked
-                            print(f"DEBUG: Parsed balance - Available: {free}, Locked: {locked}, Total: {total}")
-                            return {'available': free, 'locked': locked, 'total': total}
+                        asset = item.get('asset', item.get('coin', ''))
+                        free = float(item.get('free', 0))
+                        locked = float(item.get('locked', 0))
+                        
+                        if free == 0 and locked == 0:
+                            continue
+                        
+                        # Convert to USDT value
+                        if asset == 'USDT':
+                            free_usdt = free
+                            locked_usdt = locked
+                        else:
+                            # Get current price for this asset
+                            try:
+                                symbol = f"{asset}-USDT"
+                                klines = self.client.get_klines(symbol, '1m', limit=1)
+                                if klines and len(klines) > 0:
+                                    # Get close price from last candle
+                                    if isinstance(klines[0], dict):
+                                        current_price = float(klines[0].get('close', 0))
+                                    elif isinstance(klines[0], list) and len(klines[0]) > 4:
+                                        current_price = float(klines[0][4])  # Close price
+                                    else:
+                                        current_price = 0
+                                    
+                                    free_usdt = free * current_price
+                                    locked_usdt = locked * current_price
+                                    print(f"DEBUG: {asset} - Free: {free}, Locked: {locked}, Price: ${current_price:.2f}, USDT Value: ${free_usdt + locked_usdt:.2f}")
+                                else:
+                                    free_usdt = 0
+                                    locked_usdt = 0
+                            except Exception as e:
+                                print(f"Could not get price for {asset}: {e}")
+                                free_usdt = 0
+                                locked_usdt = 0
+                        
+                        total_available_usdt += free_usdt
+                        total_locked_usdt += locked_usdt
                     
-                    # Return first item if no USDT found
-                    free = float(balance[0].get('free', balance[0].get('balance', balance[0].get('available', 0))))
-                    locked = float(balance[0].get('locked', 0))
-                    total = free + locked
-                    print(f"DEBUG: Parsed balance (first) - Available: {free}, Locked: {locked}, Total: {total}")
-                    return {'available': free, 'locked': locked, 'total': total}
+                    total_usdt = total_available_usdt + total_locked_usdt
+                    print(f"DEBUG: Total Assets - Available: ${total_available_usdt:.2f}, Locked: ${total_locked_usdt:.2f}, Total: ${total_usdt:.2f}")
+                    return {'available': total_available_usdt, 'locked': total_locked_usdt, 'total': total_usdt}
                     
                 elif isinstance(balance, dict):
-                    # Direct balance field
+                    # Direct balance field (fallback)
                     free = float(balance.get('free', balance.get('balance', balance.get('available', 0))))
                     locked = float(balance.get('locked', 0))
                     total = free + locked
