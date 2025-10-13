@@ -42,7 +42,17 @@ class RiskManager:
         return True, "Trading allowed"
     
     def get_account_balance(self) -> float:
-        """Get account balance"""
+        """Get account balance (available/free only for backward compatibility)"""
+        balance_info = self.get_account_balance_full()
+        return balance_info['available']
+    
+    def get_account_balance_full(self) -> dict:
+        """
+        Get full account balance info
+        
+        Returns:
+            dict: {'available': float, 'locked': float, 'total': float}
+        """
         try:
             account = self.client.get_balance()
             print(f"DEBUG get_balance: {account}")
@@ -55,26 +65,34 @@ class RiskManager:
                     # Find USDT in list
                     for item in balance:
                         if item.get('asset') == 'USDT' or item.get('coin') == 'USDT':
-                            bal = float(item.get('free', item.get('balance', item.get('available', 0))))
-                            print(f"DEBUG: Parsed balance (list/USDT): {bal}")
-                            return bal
+                            free = float(item.get('free', 0))
+                            locked = float(item.get('locked', 0))
+                            total = free + locked
+                            print(f"DEBUG: Parsed balance - Available: {free}, Locked: {locked}, Total: {total}")
+                            return {'available': free, 'locked': locked, 'total': total}
+                    
                     # Return first item if no USDT found
-                    bal = float(balance[0].get('free', balance[0].get('balance', balance[0].get('available', 0))))
-                    print(f"DEBUG: Parsed balance (list/first): {bal}")
-                    return bal
+                    free = float(balance[0].get('free', balance[0].get('balance', balance[0].get('available', 0))))
+                    locked = float(balance[0].get('locked', 0))
+                    total = free + locked
+                    print(f"DEBUG: Parsed balance (first) - Available: {free}, Locked: {locked}, Total: {total}")
+                    return {'available': free, 'locked': locked, 'total': total}
+                    
                 elif isinstance(balance, dict):
                     # Direct balance field
-                    bal = float(balance.get('free', balance.get('balance', balance.get('available', 0))))
-                    print(f"DEBUG: Parsed balance (dict): {bal}")
-                    return bal
+                    free = float(balance.get('free', balance.get('balance', balance.get('available', 0))))
+                    locked = float(balance.get('locked', 0))
+                    total = free + locked
+                    print(f"DEBUG: Parsed balance (dict) - Available: {free}, Locked: {locked}, Total: {total}")
+                    return {'available': free, 'locked': locked, 'total': total}
                     
             print(f"DEBUG: Could not parse balance, returning 0")
-            return 0.0
+            return {'available': 0.0, 'locked': 0.0, 'total': 0.0}
         except Exception as e:
             print(f"Error getting balance: {e}")
             import traceback
             traceback.print_exc()
-            return 0.0
+            return {'available': 0.0, 'locked': 0.0, 'total': 0.0}
     
     def calculate_position_size(self, entry_price: float, stop_loss: float, balance: float = None) -> float:
         """

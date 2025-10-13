@@ -40,8 +40,15 @@ class TelegramNotifier:
         except Exception as e:
             print(f"Error sending Telegram message: {e}")
     
-    def notify_entry(self, trade_info: Dict):
+    def notify_entry(self, trade_info: Dict, balance: float = None, balance_info: Dict = None):
         """Send entry notification"""
+        if balance_info:
+            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+        elif balance is not None:
+            balance_text = f"\n💰 Balance: `${balance:.2f}` USDT"
+        else:
+            balance_text = ""
+        
         message = f"""
 🟢 *ENTRY SIGNAL*
 
@@ -57,30 +64,44 @@ Take Profits:
 • TP3: `{trade_info['take_profits']['tp3']:.6f}`
 
 Reason: {trade_info['signal']['reason']}
-Timeframe: {trade_info['signal']['timeframe']}
+Timeframe: {trade_info['signal']['timeframe']}{balance_text}
 """
         self.send_sync(message)
     
-    def notify_exit(self, symbol: str, exit_type: str, price: float, pnl: float):
+    def notify_exit(self, symbol: str, exit_type: str, price: float, pnl: float, balance: float = None, balance_info: Dict = None):
         """Send exit notification"""
         emoji = "🟢" if pnl > 0 else "🔴"
+        if balance_info:
+            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+        elif balance is not None:
+            balance_text = f"\n💰 Balance: `${balance:.2f}` USDT"
+        else:
+            balance_text = ""
+        
         message = f"""
 {emoji} *{exit_type.upper()}*
 
 Symbol: `{symbol}`
 Exit Price: `{price:.6f}`
-PnL: `{pnl:.2f}` USDT
+PnL: `{pnl:.2f}` USDT{balance_text}
 """
         self.send_sync(message)
     
-    def notify_stop_loss(self, symbol: str, price: float, pnl: float):
+    def notify_stop_loss(self, symbol: str, price: float, pnl: float, balance: float = None, balance_info: Dict = None):
         """Send stop loss notification"""
+        if balance_info:
+            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+        elif balance is not None:
+            balance_text = f"\n💰 Balance: `${balance:.2f}` USDT"
+        else:
+            balance_text = ""
+        
         message = f"""
 🛑 *STOP LOSS HIT*
 
 Symbol: `{symbol}`
 Stop Price: `{price:.6f}`
-Loss: `{pnl:.2f}` USDT
+Loss: `{pnl:.2f}` USDT{balance_text}
 """
         self.send_sync(message)
     
@@ -93,14 +114,21 @@ Loss: `{pnl:.2f}` USDT
 """
         self.send_sync(message)
     
-    def notify_daily_summary(self, trades: int, pnl: float, win_rate: float):
+    def notify_daily_summary(self, trades: int, pnl: float, win_rate: float, balance: float = None, balance_info: Dict = None):
         """Send daily summary"""
         emoji = "📈" if pnl > 0 else "📉"
+        if balance_info:
+            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+        elif balance is not None:
+            balance_text = f"\n💰 Balance: `${balance:.2f}` USDT"
+        else:
+            balance_text = ""
+        
         message = f"""
 {emoji} *DAILY SUMMARY*
 
 Total Trades: {trades}
 Total PnL: `{pnl:.2f}` USDT
-Win Rate: {win_rate:.1f}%
+Win Rate: {win_rate:.1f}%{balance_text}
 """
         self.send_sync(message)

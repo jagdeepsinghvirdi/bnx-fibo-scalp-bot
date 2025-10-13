@@ -38,7 +38,14 @@ class FiboScalpBot:
         self.logger.info(f"Symbol: {self.symbol}")
         self.logger.info(f"Timeframes: {', '.join(self.timeframes)}")
         
-        self.notifier.send_sync(f"🤖 *Bot Started*\n\nMode: {Settings.TRADING_MODE}\nSymbol: {self.symbol}")
+        # Get initial balance
+        balance_info = self.risk_manager.get_account_balance_full()
+        if balance_info['total'] > 0:
+            balance_text = f"\n💰 Balance: `${balance_info['total']:.2f}` USDT (Available: `${balance_info['available']:.2f}`)"
+        else:
+            balance_text = ""
+        
+        self.notifier.send_sync(f"🤖 *Bot Started*\n\nMode: {Settings.TRADING_MODE}\nSymbol: {self.symbol}{balance_text}")
         
         self.run_loop()
     
@@ -89,7 +96,9 @@ class FiboScalpBot:
                             'reason': signal['reason']
                         })
                         
-                        self.notifier.notify_entry(trade_info)
+                        # Get current balance and notify
+                        balance_info = self.risk_manager.get_account_balance_full()
+                        self.notifier.notify_entry(trade_info, balance_info=balance_info)
                     else:
                         self.logger.warning("❌ Trade execution failed (check balance/minimums)")
                 else:
@@ -127,12 +136,14 @@ class FiboScalpBot:
                 if position['direction'] == 'up' and current_price <= trailing_stop:
                     self.logger.info(f"Trailing stop hit for {symbol}")
                     self.risk_manager.close_position(symbol, "Trailing stop")
-                    self.notifier.notify_stop_loss(symbol, current_price, 0)
+                    balance_info = self.risk_manager.get_account_balance_full()
+                    self.notifier.notify_stop_loss(symbol, current_price, 0, balance_info=balance_info)
                 
                 elif position['direction'] == 'down' and current_price >= trailing_stop:
                     self.logger.info(f"Trailing stop hit for {symbol}")
                     self.risk_manager.close_position(symbol, "Trailing stop")
-                    self.notifier.notify_stop_loss(symbol, current_price, 0)
+                    balance_info = self.risk_manager.get_account_balance_full()
+                    self.notifier.notify_stop_loss(symbol, current_price, 0, balance_info=balance_info)
 
 def main():
     bot = FiboScalpBot()
