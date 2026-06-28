@@ -13,37 +13,41 @@ def format_balance(balance):
     """Format balance data for better readability"""
     if isinstance(balance, dict):
         if 'balances' in balance and isinstance(balance['balances'], list):
-            # Separate balances into spot and futures
+            # Organize balances by type
+            wallets = {}
+            total_assets = {}
+            
+            for item in balance['balances']:
+                wallet_type = item.get('type', 'spot').upper()
+                if wallet_type not in wallets:
+                    wallets[wallet_type] = []
+                wallets[wallet_type].append(item)
+                
+                # Track total for each asset
+                asset = item.get('disPlayName', item.get('asset', 'N/A'))
+                free = float(item.get('free', 0)) if item.get('free', '0') != 'N/A' else 0
+                if asset not in total_assets:
+                    total_assets[asset] = 0
+                total_assets[asset] += free
+            
+            # Display each wallet type separately
             print()
-            print("  SPOT WALLET:")
-            print("  " + "-"*40)
-            spot_count = 0
-            for idx, item in enumerate(balance['balances'], 1):
-                if item.get('type') == 'spot' or 'spot' in str(item).lower() or not item.get('type'):
-                    spot_count += 1
-                    print(f"  [{spot_count}] Asset: {item.get('disPlayName', item.get('asset', 'N/A'))}")
-                    print(f"      Free: {item.get('free', 'N/A')}")
-                    print(f"      Locked: {item.get('locked', 'N/A')}")
+            for idx, (wallet_type, items) in enumerate(wallets.items(), 1):
+                print(f"  [{idx}] {wallet_type} WALLET:")
+                print("  " + "-"*40)
+                for item_idx, item in enumerate(items, 1):
+                    print(f"      [{item_idx}] Asset: {item.get('disPlayName', item.get('asset', 'N/A'))}")
+                    print(f"          Free: {item.get('free', 'N/A')}")
+                    print(f"          Locked: {item.get('locked', 'N/A')}")
                     print()
             
-            if spot_count == 0:
-                print("  No spot balances found")
-                print()
-            
-            print("  FUTURES WALLET:")
+            # Display total funds
+            print()
+            print("  TOTAL FUNDS:")
             print("  " + "-"*40)
-            futures_count = 0
-            for idx, item in enumerate(balance['balances'], 1):
-                if item.get('type') == 'futures' or 'futures' in str(item).lower():
-                    futures_count += 1
-                    print(f"  [{futures_count}] Asset: {item.get('disPlayName', item.get('asset', 'N/A'))}")
-                    print(f"      Free: {item.get('free', 'N/A')}")
-                    print(f"      Locked: {item.get('locked', 'N/A')}")
-                    print()
-            
-            if futures_count == 0:
-                print("  No futures balances found")
-                print()
+            for asset, total in total_assets.items():
+                print(f"  {asset}: {total}")
+            print()
         else:
             # Format other dict structures
             for key, value in balance.items():
