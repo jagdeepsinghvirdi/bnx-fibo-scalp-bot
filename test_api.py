@@ -5,8 +5,30 @@ Quick script to verify your API keys are working
 """
 
 import sys
+import json
 from config import Settings
 from core import BingXClient
+
+def format_balance(balance):
+    """Format balance data for better readability"""
+    if isinstance(balance, dict):
+        if 'balances' in balance and isinstance(balance['balances'], list):
+            # Format list of balances
+            for item in balance['balances']:
+                print(f"  Asset: {item.get('disPlayName', item.get('asset', 'N/A'))}")
+                print(f"    Free: {item.get('free', 'N/A')}")
+                print(f"    Locked: {item.get('locked', 'N/A')}")
+                print()
+        else:
+            # Format other dict structures
+            for key, value in balance.items():
+                if isinstance(value, (dict, list)):
+                    print(f"  {key}:")
+                    print(f"    {json.dumps(value, indent=6)}")
+                else:
+                    print(f"  {key}: {value}")
+    else:
+        print(f"  {balance}")
 
 def test_connection():
     """Test API connection and display account info"""
@@ -61,11 +83,7 @@ def test_connection():
             print("✓ Balance retrieved successfully!")
             print()
             print("Account Balance:")
-            if isinstance(balance, dict):
-                for key, value in balance.items():
-                    print(f"  {key}: {value}")
-            else:
-                print(f"  {balance}")
+            format_balance(balance)
         else:
             print("⚠️  Empty response (might be normal for new testnet account)")
     except Exception as e:
