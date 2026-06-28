@@ -13,11 +13,36 @@ def format_balance(balance):
     """Format balance data for better readability"""
     if isinstance(balance, dict):
         if 'balances' in balance and isinstance(balance['balances'], list):
-            # Format list of balances
-            for item in balance['balances']:
-                print(f"  Asset: {item.get('disPlayName', item.get('asset', 'N/A'))}")
-                print(f"    Free: {item.get('free', 'N/A')}")
-                print(f"    Locked: {item.get('locked', 'N/A')}")
+            # Separate balances into spot and futures
+            print()
+            print("  SPOT WALLET:")
+            print("  " + "-"*40)
+            spot_count = 0
+            for idx, item in enumerate(balance['balances'], 1):
+                if item.get('type') == 'spot' or 'spot' in str(item).lower() or not item.get('type'):
+                    spot_count += 1
+                    print(f"  [{spot_count}] Asset: {item.get('disPlayName', item.get('asset', 'N/A'))}")
+                    print(f"      Free: {item.get('free', 'N/A')}")
+                    print(f"      Locked: {item.get('locked', 'N/A')}")
+                    print()
+            
+            if spot_count == 0:
+                print("  No spot balances found")
+                print()
+            
+            print("  FUTURES WALLET:")
+            print("  " + "-"*40)
+            futures_count = 0
+            for idx, item in enumerate(balance['balances'], 1):
+                if item.get('type') == 'futures' or 'futures' in str(item).lower():
+                    futures_count += 1
+                    print(f"  [{futures_count}] Asset: {item.get('disPlayName', item.get('asset', 'N/A'))}")
+                    print(f"      Free: {item.get('free', 'N/A')}")
+                    print(f"      Locked: {item.get('locked', 'N/A')}")
+                    print()
+            
+            if futures_count == 0:
+                print("  No futures balances found")
                 print()
         else:
             # Format other dict structures
