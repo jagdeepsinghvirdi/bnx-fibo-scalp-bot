@@ -98,7 +98,7 @@ def test_api_connection():
         params['signature'] = signature
         
         headers = {
-            'X-BingX-API-KEY': Settings.BINGX_API_KEY,
+            'X-BX-APIKEY': Settings.BINGX_API_KEY,
             'Content-Type': 'application/json'
         }
         
@@ -106,7 +106,7 @@ def test_api_connection():
         
         print(f"URL: {url}")
         print(f"Params: {params}")
-        print(f"Headers: {{'X-BingX-API-KEY': '{Settings.BINGX_API_KEY[:20]}...'}}")
+        print(f"Headers: {{'X-BX-APIKEY': '{Settings.BINGX_API_KEY[:20]}...'}}")
         print()
         
         response = requests.get(url, params=params, headers=headers, timeout=10)
